@@ -2,11 +2,11 @@ Plot()
 {
     Sequence("Latnija_main")
     {
-        Sigma_Boundary("VI_start");
+        Boundary("VI_start");
         Phase("VI"){
             R_Date("s61864",15180,110);
         };
-        Sigma_Boundary("V_start");
+        Boundary("V_start");
         Phase("Ve"){
             Span("span_Ve");
             R_Date("s62551",9917,31);
@@ -16,7 +16,7 @@ Plot()
             R_Date("s62547",7081,26);
             R_Date("s62546",7078,27);
         };
-        Sigma_Boundary("V_mid");
+        Boundary("V_mid");
         Phase("Vd_a"){
             Span("span_Vd_a");
             R_Date("s54780",6998,35);
@@ -26,7 +26,7 @@ Plot()
             R_Date("s54765",7096,34);
             R_Date("s61846",6908,21);
         };
-        Sigma_Boundary("IV_start");
+        Boundary("IV_start");
         Phase("IV"){
             Span("span_IV");
             R_Date("s54768",6997,32);
@@ -36,7 +36,7 @@ Plot()
             R_Date("s54762",7048,34);
             R_Date("s54761",7014,34);
         };
-        Sigma_Boundary("III_start");
+        Boundary("III_start");
         Phase("III"){
             Span("span_III");
             R_Date("s61854",6984,26);
@@ -49,26 +49,26 @@ Plot()
             R_Date("s61861",6929,27);
             R_Date("s54778",6916,34);
         };
-        Sigma_Boundary("II_start");
+        Boundary("II_start");
         Phase("II"){
             Span("span_II");
             Sequence("IIf"){
-                Sigma_Boundary("=II_start");
+                Boundary("=II_start");
                 R_Date("s61859",6902,26);
-                Sigma_Boundary("=II_end");
+                Boundary("=II_end");
             };
             Sequence("IIc_IIb"){
-                Sigma_Boundary("=II_start");
+                Boundary("=II_start");
                 Phase("IIc"){
                     R_Date("s61866",6836,27);
                 };
-                Sigma_Boundary("IIc_b_mid");
+                Boundary("IIc_b_mid");
                 Phase("IIb"){
                     R_Date("s61848",6363,19);
                 };
-                Sigma_Boundary("=II_end");
+                Boundary("=II_end");
             };
         };
-        Sigma_Boundary("II_end");
+        Boundary("II_end");
     };
 };

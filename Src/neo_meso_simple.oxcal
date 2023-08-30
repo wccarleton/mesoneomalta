@@ -529,10 +529,10 @@ Plot()
         Sigma_Boundary("S_Italy_meso_start");
         Phase("S_Italy_meso_dates")
         {
-            Curve("Marine20","marine20.14c");
-            Delta_R("LocalMarine",-131,30);
+            Curve("Marine20_2","marine20.14c");
+            Delta_R("LocalMarine_2",-131,30);
             R_Date("21", 8619, 90);
-            Curve("IntCal20","intcal20.14c");
+            Curve("IntCal20_2","intcal20.14c");
             R_Date("321", 7463, 90);
             R_Date("322", 8135, 90);
             R_Date("323", 8735, 90);
@@ -760,8 +760,8 @@ Plot()
             R_Date("3", 7809, 90);
             R_Date("4", 7809, 90);
             R_Date("5", 7848, 90);
-            Curve("Marine20","marine20.14c");
-            Delta_R("LocalMarine",88,50);
+            Curve("Marine20_3","marine20.14c");
+            Delta_R("LocalMarine_3",88,50);
             R_Date("6", 8159, 90);
             R_Date("7", 8960, 90);
             R_Date("12", 7175, 90);
@@ -774,7 +774,7 @@ Plot()
             R_Date("22", 8620, 90);
             R_Date("23", 8685, 90);
             R_Date("24", 8785, 90);
-            Curve("Atmospheric","intcal20.14c");
+            Curve("IntCal20_3","intcal20.14c");
             R_Date("35", 7060, 90);
             R_Date("36", 7600, 90);
             R_Date("280", 8608, 90);
@@ -809,14 +809,14 @@ Plot()
         Sigma_Boundary("Sicily_neo_start");
         Phase("Sicily_neo_phase")
         {
-            Curve("Marine20","marine20.14c");
-            Delta_R("LocalMarine",88,50);
+            Curve("Marine20_4","marine20.14c");
+            Delta_R("LocalMarine_4",88,50);
             R_Date("9", 7020, 90);
             R_Date("10", 6985, 90);
             R_Date("11", 7173, 90);
             R_Date("13", 7410, 90);
             R_Date("14", 7413, 90);
-            Curve("Atmospheric","intcal20.14c");
+            Curve("IntCal20_4","intcal20.14c");
             R_Date("145", 6476, 90);
             R_Date("288", 6200, 90);
             R_Date("303", 6286, 90);

@@ -16,7 +16,7 @@ Plot()
             R_Date("s62547",7081,26);
             R_Date("s62546",7078,27);
         };
-        Sigma_Boundary("V_mid");
+        Boundary("V_mid");
         Phase("Vd_a"){
             Span("span_Vd_a");
             R_Date("s54780",6998,35);
@@ -26,7 +26,7 @@ Plot()
             R_Date("s54765",7096,34);
             R_Date("s61846",6908,21);
         };
-        Sigma_Boundary("IV_start");
+        Boundary("IV_start");
         Phase("IV"){
             Span("span_IV");
             R_Date("s54768",6997,32);
@@ -36,7 +36,7 @@ Plot()
             R_Date("s54762",7048,34);
             R_Date("s54761",7014,34);
         };
-        Sigma_Boundary("III_start");
+        Boundary("III_start");
         Phase("III"){
             Span("span_III");
             R_Date("s61854",6984,26);

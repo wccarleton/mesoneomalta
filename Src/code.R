@@ -98,9 +98,9 @@ regions_ordered <- c("N_Italy",
                 "C_Italy",
                 "S_Italy",
                 "Sicily",
-                "Malta",
+                "Corsica",
                 "Sardinia",
-                "Corsica")
+                "Malta")
 
 posts$region <- factor(posts$region, levels = regions_ordered)
 posts$date <- abs(posts$date)
