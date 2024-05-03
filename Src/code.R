@@ -68,7 +68,7 @@ write.csv(c14_coords,
 
 # bring in OxCal results for plotting
 
-oxcal_results_path <- "~/OxCal/Malta/"
+oxcal_results_path <- "OxCal/"
 
 files <- list.files(oxcal_results_path)
 
@@ -105,10 +105,10 @@ regions_ordered <- c("N_Italy",
 posts$region <- factor(posts$region, levels = regions_ordered)
 posts$date <- abs(posts$date)
 
-plt <- ggplot(posts, mapping = aes(x = date, y = density, fill = period)) +
+plt <- ggplot(posts, mapping = aes(x = 1950 + date, y = density, fill = period)) +
         geom_area(position = "identity") +
         facet_grid(region ~ .) +
-        labs(x = "years BCE") +
+        labs(x = "years BP") +
         scale_x_reverse() +
         theme_minimal()
 
