@@ -13,7 +13,7 @@ library(Bchron)
 # pull in the data from Excel sheets and CSVs as needed
 
 # get sheet names
-data_path <- "./Data/FINALRadiocarbonDatabase.xlsx"
+data_path <- "./Data/radiocarbon_database_regional_v1.xlsx"
 sheets <- excel_sheets(data_path)
 sheets
 
