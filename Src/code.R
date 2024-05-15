@@ -13,7 +13,7 @@ library(Bchron)
 # pull in the data from Excel sheets and CSVs as needed
 
 # get sheet names
-data_path <- "./Data/radiocarbon_database_regional_v1.xlsx"
+data_path <- "./Data/radiocarbon_database_regional.xlsx"
 sheets <- excel_sheets(data_path)
 sheets
 
@@ -25,7 +25,7 @@ central_med <- read_excel(data_path,
 # unique key/name column for the dates because not all of the dates in the
 # spreadsheet have lab numbers.
 
-c14_dates <- data.frame(Name = 1:dim(central_med)[1],
+c14_dates <- data.frame(Name = central_med$ProjCode,#1:dim(central_med)[1],
         Date = central_med$date,
         Uncertainty = central_med$error,
         Culture = central_med$Culture,
