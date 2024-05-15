@@ -2,7 +2,7 @@ Plot()
 {
     Sequence("LAT1")
     {
-        Boundary("VIa_s");
+        Sigma_Boundary("VIa_s");
         Phase("VIa")
         {
             R_Date("65864",9018,21);
@@ -13,7 +13,7 @@ Plot()
             R_Date("65868",7715,20);
             R_Date("65869",9238,22);
         };
-        Boundary("Va_s");
+        Sigma_Boundary("Va_s");
         Phase("Va")
         {
             R_Date("62552",6970,26);
@@ -21,7 +21,7 @@ Plot()
             R_Date("65862",7231,19);
             R_Date("65877",7504,20);
         };
-        Boundary("Vb_s");
+        Sigma_Boundary("Vb_s");
         Phase("Vb")
         {
             R_Date("54765",7096,34);
@@ -29,13 +29,13 @@ Plot()
             R_Date("62553",7008,26);
             R_Date("65878",6903,19);
         };
-        Boundary("IV_s");
+        Sigma_Boundary("IV_s");
         Phase("IV")
         {
             R_Date("54775",6925,32);
             R_Date("54768",6997,32);
         };
-        Boundary("III_s");
+        Sigma_Boundary("III_s");
         Phase("III")
         {
             R_Date("61861",6929,27);
@@ -46,26 +46,26 @@ Plot()
             R_Date("61854",6984,26);
             R_Date("54781",6871,35);
         };
-        Boundary("III_e");
+        Sigma_Boundary("III_e");
     };
     Sequence("LAT2")
     {
-        Boundary("=VIa_s");
+        Sigma_Boundary("=VIa_s");
         Phase("VIb")
         {
             R_Date("65879",6932,19);
             R_Date("65874",7068,20);
         };
-        Boundary("=Vb_s");
+        Sigma_Boundary("=Vb_s");
     };
     Sequence("LAT3")
     {
-        Boundary("VIc_s");
+        Sigma_Boundary("VIc_s");
         Phase("VIc")
         {
             R_Date("62551",9917,31);
         };
-        Boundary("Vc_s");
+        Sigma_Boundary("Vc_s");
         Phase("Vc")
         {
             R_Date("62546",7078,27);
@@ -74,11 +74,11 @@ Plot()
             R_Date("62548",7375,27);
             R_Date("62549",7112,26);
         };
-        Boundary("=IV_s");
+        Sigma_Boundary("=IV_s");
         Phase("Vd")
         {
             R_Date("61846",6908,21);
         };
-        Boundary("=III_s");
+        Sigma_Boundary("=III_s");
     };
 };
