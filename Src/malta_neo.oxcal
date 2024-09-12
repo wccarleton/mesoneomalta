@@ -1,0 +1,26 @@
+ // Delta_R values updated for Marine20
+ Plot()
+ {
+  Sequence("Malta_neo")
+  {
+   Boundary("Malta_neo_start");
+   Phase("Malta_neo_phase")
+   {
+    R_Date("745",6151,33);
+    R_Date("746",6171,41);
+    R_Date("747",6172,39);
+    R_Date("748",6175,61);
+    R_Date("749",6181,40);
+    R_Date("750",6193,48);
+    R_Date("751",6239,37);
+    R_Date("752",6267,40);
+    R_Date("753",6409,38);
+    R_Date("754",6412,44);
+    R_Date("771",6005,51);
+    R_Date("772",6035,54);
+    R_Date("773",6140,160);
+    R_Date("774",6158,51);
+   };
+   Boundary("Malta_neo_end");
+  };
+ };

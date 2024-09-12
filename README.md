@@ -2,7 +2,7 @@
 ## Overview
 This repo contains the data and code used for the study presented in the following paper:
 
-[*PAPER TITLE*]()
+[*Hunter-gatherer sea voyages extended to remotest Mediterranean islands*]()
 
 ## Abstract
 

@@ -1,6 +1,6 @@
 Plot()
 {
-    Sequence("LAT1")
+    Sequence("SEQ1")
     {
         Sigma_Boundary("VIa_s");
         Phase("VIa")
@@ -48,7 +48,7 @@ Plot()
         };
         Sigma_Boundary("III_e");
     };
-    Sequence("LAT2")
+    Sequence("SEQ2")
     {
         Sigma_Boundary("=VIa_s");
         Phase("VIb")
@@ -58,7 +58,7 @@ Plot()
         };
         Sigma_Boundary("=Vb_s");
     };
-    Sequence("LAT3")
+    Sequence("SEQ3")
     {
         Sigma_Boundary("VIc_s");
         Phase("VIc")
