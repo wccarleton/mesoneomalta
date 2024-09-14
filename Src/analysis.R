@@ -522,6 +522,10 @@ oxcal_params_table <- function(nested_list) {
   ocd_overall_agreement <- rep(NA, length(ocd_indices))
   ocd_model_agreement <- rep(NA, length(ocd_indices))
   ocd_matrices <- vector("list", length(ocd_indices))  # Initialize a list to store matrices
+  expected_age <- rep(NA, length(ocd_indices))
+  hdi_95 <- rep(NA, length(ocd_indices))
+  lower_95_hdr <- rep(NA, length(ocd_indices))
+  upper_95_hdr <- rep(NA, length(ocd_indices))
 
   # Loop over indices explicitly to extract 'name', 'type', and matrices of ages and posterior probabilities
   for (i in seq_along(ocd_indices)) {
@@ -540,11 +544,26 @@ oxcal_params_table <- function(nested_list) {
     # Extract values and create matrix
     if (!is.null(nested_list[[index]]$posterior$prob)) {
       posterior_prob <- nested_list[[index]]$posterior$prob
-      posterior_prob <- posterior_prob / max(posterior_prob)  # Normalize to max 1
+      plot_prob <- posterior_prob / max(posterior_prob)  # Normalize to max 1 for plotting
       start_age_bp <- nested_list[[index]]$posterior$start
       age_resolution <- nested_list[[index]]$posterior$resolution
       ages <- seq(from = start_age_bp, by = age_resolution, length.out = length(posterior_prob))
-      ocd_matrices[[i]] <- cbind(ages, posterior_prob)  # Combine ages and probabilities into a matrix
+      ocd_matrices[[i]] <- cbind(ages, plot_prob)  # Combine ages and probabilities into a matrix for plotting
+      
+      # Normalize posterior_prob to integrate to 1 for calculations
+      posterior_prob <- posterior_prob / sum(posterior_prob * age_resolution)
+      
+      # Calculate expected age (weighted mean)
+      expected_age[i] <- sum(ages * posterior_prob) / sum(posterior_prob)
+      
+      # Calculate the 95% HDR
+      age_prob_matrix <- cbind(ages, posterior_prob)
+      age_prob_matrix <- age_prob_matrix[order(-age_prob_matrix[, 2]), ]  # Sort by posterior_prob descending
+      cumsum_probs <- cumsum(age_prob_matrix[, 2] * age_resolution)
+      hdr_indices <- which(cumsum_probs <= 0.95)
+      lower_95_hdr[i] <- min(age_prob_matrix[hdr_indices, 1])
+      upper_95_hdr[i] <- max(age_prob_matrix[hdr_indices, 1])
+      hdi_95[i] <- abs(upper_95_hdr[i] - lower_95_hdr[i])
     }
 
     # extract agreement indeces
@@ -565,6 +584,10 @@ oxcal_params_table <- function(nested_list) {
     index = ocd_indices,                    # List indices for reference
     name = ocd_names,                       # Extracted 'name'
     type = ocd_types,                       # Extracted 'type'
+    expected_age = expected_age,
+    hdi_95 = hdi_95,
+    lower_95_hdr = lower_95_hdr,
+    upper_95_hdr = upper_95_hdr,
     agreement = ocd_agreement,
     overall_agreement = ocd_overall_agreement,
     model_agreement = ocd_model_agreement,
@@ -658,8 +681,21 @@ for (j in seq_along(subset_filenames)) {
 
 oxcal_table_final <- bind_rows(oxcal_tables)
 
+report_variables <- c("name",
+                        "type",
+                        "expected_age",
+                        "hdi_95",
+                        "lower_95_hdr",
+                        "upper_95_hdr",
+                        "agreement",
+                        "overall_agreement",
+                        "model_agreement")
+
+report_variables_idx <- grep(paste(report_variables, collapse = "|"), 
+                                names(oxcal_table_final))
+
 # save main results
-write.table(oxcal_table_final[, -8], 
+write.table(oxcal_table_final[, report_variables_idx], 
           file = "Output/meso_neo_model_results.csv",
           row.names = FALSE)
 
@@ -758,9 +794,26 @@ result_data <- parseFullOxcalOutput(oxcal_results_txt)
 #### EXTRACT RESULTS AND PLOT ##################################################
 # table relating oxcal data list elements to model parameter names and 
 # indeces
-oxcal_table <- oxcal_params_table(result_data)
+oxcal_table_full <- oxcal_params_table(result_data)
 
-oxcal_table <- oxcal_table[-which(oxcal_table$type == "model" | is.na(oxcal_table$type)),]
+report_variables <- c("name",
+                        "type",
+                        "expected_age",
+                        "hdi_95",
+                        "lower_95_hdr",
+                        "upper_95_hdr",
+                        "agreement",
+                        "overall_agreement",
+                        "model_agreement")
+
+report_variables_idx <- grep(paste(report_variables, collapse = "|"), 
+                        names(oxcal_table_full))
+
+write.table(oxcal_table_full[, report_variables_idx], 
+            file = "Output/latnija_oxcal_results_table.csv", 
+            row.names = FALSE)
+
+oxcal_table <- oxcal_table_full[-which(oxcal_table_full$type == "model" | is.na(oxcal_table_full$type)),]
 
 # Create a long format table for plotting
 plot_data <- data.frame(name = character(), 
@@ -775,7 +828,8 @@ for (i in 1:nrow(oxcal_table)) {
   
   # Convert matrix to data frame and add the 'name' column
   if (!is.null(current_matrix)) {
-    current_df <- data.frame(ages = current_matrix[, 1], posterior_prob = current_matrix[, 2])
+    current_df <- data.frame(ages = current_matrix[, 1], 
+                            posterior_prob = current_matrix[, 2])
     current_df$name <- current_name
     current_df$offset <- i  # Add an offset for vertical separation in the plot
     
