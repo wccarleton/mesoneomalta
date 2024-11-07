@@ -136,21 +136,9 @@ Plot()
                 Outlier("General",0.05);
             }; 
         };
-        Sigma_Boundary("III_st");
-        Phase("III")
+        Sigma_Boundary("IIIA_st");
+        Phase("IIIA")
         {
-            //019
-            R_Date("61861",6929,27){
-                Outlier("General",0.05);
-            };
-            //025
-            R_Date("61857",6956,27){
-                Outlier("General",0.05);
-            }; 
-            //025
-            R_Date("54779",5510,30){
-                Outlier("General",0.05);
-            }; 
             //029
             R_Date("61851",6918,22){
                 Outlier("General",0.05);
@@ -168,6 +156,22 @@ Plot()
                 Outlier("General",0.05);
             }; 
         };
-        Sigma_Boundary("III_en");
+        Sigma_Boundary("IIIB_st");
+        Phase("IIIB")
+        {
+            //019
+            R_Date("61861",6929,27){
+                Outlier("General",0.05);
+            };
+            //025
+            R_Date("61857",6956,27){
+                Outlier("General",0.05);
+            }; 
+            //025
+            R_Date("54779",5510,30){
+                Outlier("General",0.05);
+            };
+        };
+        Sigma_Boundary("IIIB_en");
     };
 };

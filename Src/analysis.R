@@ -511,7 +511,7 @@ ggsave(device = "pdf",
 #### OxCal utility functions ###################################################
 
 # extract oxcal list element names, paramater names, and types 
-oxcal_params_table <- function(nested_list) {
+oxcal_params_table <- function(nested_list, bcad = TRUE) {
   # Find all elements that match the pattern 'ocd[' using grep
   ocd_indices <- grep("^ocd\\[", names(nested_list))
 
@@ -522,10 +522,13 @@ oxcal_params_table <- function(nested_list) {
   ocd_overall_agreement <- rep(NA, length(ocd_indices))
   ocd_model_agreement <- rep(NA, length(ocd_indices))
   ocd_matrices <- vector("list", length(ocd_indices))  # Initialize a list to store matrices
+  ocd_matrices_lik <- vector("list", length(ocd_indices))  # Initialize a list to store matrices
   expected_age <- rep(NA, length(ocd_indices))
   hdi_95 <- rep(NA, length(ocd_indices))
-  lower_95_hdr <- rep(NA, length(ocd_indices))
-  upper_95_hdr <- rep(NA, length(ocd_indices))
+  lo_95_modelled <- rep(NA, length(ocd_indices))
+  up_95_modelled <- rep(NA, length(ocd_indices))
+  lo_95_unmodelled <- rep(NA, length(ocd_indices))
+  up_95_unmodelled <- rep(NA, length(ocd_indices))
 
   # Loop over indices explicitly to extract 'name', 'type', and matrices of ages and posterior probabilities
   for (i in seq_along(ocd_indices)) {
@@ -556,14 +559,35 @@ oxcal_params_table <- function(nested_list) {
       # Calculate expected age (weighted mean)
       expected_age[i] <- sum(ages * posterior_prob) / sum(posterior_prob)
       
-      # Calculate the 95% HDR
+      # Calculate the 95% HDR for modelled ages
       age_prob_matrix <- cbind(ages, posterior_prob)
       age_prob_matrix <- age_prob_matrix[order(-age_prob_matrix[, 2]), ]  # Sort by posterior_prob descending
       cumsum_probs <- cumsum(age_prob_matrix[, 2] * age_resolution)
       hdr_indices <- which(cumsum_probs <= 0.95)
-      lower_95_hdr[i] <- min(age_prob_matrix[hdr_indices, 1])
-      upper_95_hdr[i] <- max(age_prob_matrix[hdr_indices, 1])
-      hdi_95[i] <- abs(upper_95_hdr[i] - lower_95_hdr[i])
+      lo_95_modelled[i] <- min(age_prob_matrix[hdr_indices, 1])
+      up_95_modelled[i] <- max(age_prob_matrix[hdr_indices, 1])
+      hdi_95[i] <- abs(up_95_modelled[i] - lo_95_modelled[i])
+    }
+
+    if (!is.null(nested_list[[index]]$likelihood$prob)) {
+      likelihood_prob <- nested_list[[index]]$likelihood$prob
+      lik_prob <- likelihood_prob / max(likelihood_prob)  # Normalize to max 1 for plotting
+      lik_start_age_bp <- nested_list[[index]]$likelihood$start
+      lik_age_resolution <- nested_list[[index]]$likelihood$resolution
+      lik_ages <- seq(from = lik_start_age_bp, by = lik_age_resolution, length.out = length(lik_prob))
+      ocd_matrices_lik[[i]] <- cbind(lik_ages, lik_prob)
+
+      # Normalize unmodelled densities to integrate to 1 for calculations
+      lik_prob <- lik_prob / sum(lik_prob * lik_age_resolution)
+
+      # Calculate the 95% HDR for unmodelled ages
+      age_prob_matrix <- cbind(lik_ages, lik_prob)
+      age_prob_matrix <- age_prob_matrix[order(-age_prob_matrix[, 2]), ]  # Sort by posterior_prob descending
+      cumsum_probs <- cumsum(age_prob_matrix[, 2] * lik_age_resolution)
+      hdr_indices <- which(cumsum_probs <= 0.95)
+      lo_95_unmodelled[i] <- min(age_prob_matrix[hdr_indices, 1])
+      up_95_unmodelled[i] <- max(age_prob_matrix[hdr_indices, 1])
+      #hdi_95_unmodelled[i] <- abs(upper_95_hdr[i] - lower_95_hdr[i])
     }
 
     # extract agreement indeces
@@ -578,19 +602,31 @@ oxcal_params_table <- function(nested_list) {
     }
   }
 
+  if(!bcad){
+    l <- length(expected_age)
+    expected_age[5:l] <- expected_age[5:l] - 1950
+    lo_95_unmodelled[5:l] <- lo_95_unmodelled[5:l] - 1950
+    up_95_unmodelled[5:l] <- up_95_unmodelled[5:l] - 1950
+    lo_95_modelled[5:l] <- lo_95_modelled[5:l] - 1950
+    up_95_modelled[5:l] <- up_95_modelled[5:l] - 1950
+  }
+
   # Create the tibble with extracted values
   result_table <- tibble(
     ocd = names(nested_list)[ocd_indices],  # ocd[n]
     index = ocd_indices,                    # List indices for reference
     name = ocd_names,                       # Extracted 'name'
     type = ocd_types,                       # Extracted 'type'
-    expected_age = expected_age,
-    hdi_95 = hdi_95,
-    lower_95_hdr = lower_95_hdr,
-    upper_95_hdr = upper_95_hdr,
+    expected_age = round(expected_age, 2),
+    hdi_95_modelled = hdi_95,
+    lo_95_unmodelled = lo_95_unmodelled,
+    up_95_unmodelled = up_95_unmodelled,
+    lo_95_modelled = lo_95_modelled,
+    up_95_modelled = up_95_modelled,
     agreement = ocd_agreement,
     overall_agreement = ocd_overall_agreement,
     model_agreement = ocd_model_agreement,
+    likelihood = ocd_matrices_lik, # combined age and likelihood (unmodelled cal dates)
     postprob = ocd_matrices # Combined matrix of ages and posterior probabilities
   )
   return(result_table)
@@ -794,14 +830,16 @@ result_data <- parseFullOxcalOutput(oxcal_results_txt)
 #### EXTRACT RESULTS AND PLOT ##################################################
 # table relating oxcal data list elements to model parameter names and 
 # indeces
-oxcal_table_full <- oxcal_params_table(result_data)
+oxcal_table_full <- oxcal_params_table(result_data, bcad = FALSE)
 
 report_variables <- c("name",
                         "type",
                         "expected_age",
-                        "hdi_95",
-                        "lower_95_hdr",
-                        "upper_95_hdr",
+                        "lo_95_unmodelled",
+                        "up_95_unmodelled",
+                        "lo_95_modelled",
+                        "up_95_modelled",
+                        "hdi_95_modelled",
                         "agreement",
                         "overall_agreement",
                         "model_agreement")
@@ -818,25 +856,39 @@ oxcal_table <- oxcal_table_full[-which(oxcal_table_full$type == "model" | is.na(
 # Create a long format table for plotting
 plot_data <- data.frame(name = character(), 
                         ages = numeric(), 
-                        posterior_prob = numeric(), 
+                        density = numeric(),
+                        density_type = character(),
                         offset = numeric())
 
 # Populate the long format table by extracting data from each row of oxcal_table
 for (i in 1:nrow(oxcal_table)) {
   current_name <- oxcal_table$name[i]
-  current_matrix <- oxcal_table$postprob[[i]]
+  postprob_matrix <- oxcal_table$postprob[[i]]
+  lik_matrix <- oxcal_table$likelihood[[i]]
   
   # Convert matrix to data frame and add the 'name' column
-  if (!is.null(current_matrix)) {
-    current_df <- data.frame(ages = current_matrix[, 1], 
-                            posterior_prob = current_matrix[, 2])
-    current_df$name <- current_name
-    current_df$offset <- i  # Add an offset for vertical separation in the plot
-    
+  if (!is.null(postprob_matrix)) {
+    # first for the posterior
+    postprob_df <- data.frame(ages = postprob_matrix[, 1], 
+                              density = postprob_matrix[, 2])
+    postprob_df$name <- current_name
+    postprob_df$density_type <- "posterior"
+    postprob_df$offset <- i  # Add an offset for vertical separation in the plot
+    # again for the likelihood (unmodelled cal date)
+    if(!is.null(lik_matrix)) {
+      lik_df <- data.frame(ages = lik_matrix[, 1], 
+                            density = lik_matrix[, 2])
+      lik_df$name <- current_name
+      lik_df$density_type <- "likelihood"
+      lik_df$offset <- i  # Add an offset for vertical separation in the plot
+    }
     # Append to the plot_data data frame
-    plot_data <- rbind(plot_data, current_df)
+    plot_data <- rbind(plot_data, postprob_df, lik_df)
   }
 }
+
+# plot_data contains posteriors for model parameters we don't want to plot
+plot_data <- plot_data[-which(plot_data$name == "General" | plot_data$name == ""),]
 
 # Read the updated CSV with the order and type columns
 oxcal_sample_map <- read.csv("Data/sample_model_map_ordered.csv")
@@ -847,54 +899,21 @@ merged_plot_data <- merge(plot_data, oxcal_sample_map, by = "name", all.x = TRUE
 # Calculate expected years for each density
 expected_years <- merged_plot_data %>%
   group_by(name) %>%
-  summarise(expected_year = sum(ages * posterior_prob) / sum(posterior_prob))
+  summarise(expected_year = sum(ages * density) / sum(density))
 
 # Merge expected years into the sample map
 oxcal_sample_map <- merge(oxcal_sample_map, expected_years, by = "name", all.x = TRUE) %>%
     arrange(order)
 
 # For each sequence and phase, sort the events by expected year to improve the plot
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT1" & 
-                                            phase_num == "6a" &
-                                            type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
-                                    arrange(expected_year)
+phasing <- c("6a", "6b", "5a", "5b", "4", "3a", "3b")
 
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT1" & 
-                                            phase_num == "5a" &
+for(j in 1:length(phasing)){
+  event_rows <- as.numeric(row.names(subset(oxcal_sample_map, phase_num == phasing[j] &
                                             type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
+  oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
                                     arrange(expected_year)
-
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT1" & 
-                                            phase_num == "5b" &
-                                            type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
-                                    arrange(expected_year)
-
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT1" & 
-                                            phase_num == "4" &
-                                            type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
-                                    arrange(expected_year)
-
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT1" & 
-                                            phase_num == "3" &
-                                            type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
-                                    arrange(expected_year)
-
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT2" & 
-                                            phase_num == "6b" &
-                                            type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
-                                    arrange(expected_year)
-
-event_rows <- as.numeric(row.names(subset(oxcal_sample_map, sequence == "LAT3" & 
-                                            phase_num == "5c" &
-                                            type == "event")))
-oxcal_sample_map[event_rows,] <- oxcal_sample_map[event_rows,] %>% 
-                                    arrange(expected_year)
+}
 
 oxcal_sample_map$order <- 1: dim(oxcal_sample_map)[1]
 
@@ -905,23 +924,34 @@ merged_plot_data <- merge(plot_data, oxcal_sample_map, by = "name", all.x = TRUE
 threshold <- 0.2  # Adjust this value as needed for visibility
 
 # Determine the position for labels by isolating ages where densities exceed the threshold
-label_positions <- merged_plot_data %>%
+label_positions <- subset(merged_plot_data, density_type == "posterior") %>%
   group_by(name) %>%
-  filter(posterior_prob > threshold) %>%  
+  filter(density > threshold) %>%  
   filter(ages == max(ages)) %>%           
-  mutate(label_x = ages, label_y = posterior_prob + order)
+  mutate(label_x = ages - 1950, label_y = order)
 
-# Plot using ggplot2 with vertical offsets using geom_ribbon and facet by sequence
-ggplot(merged_plot_data, aes(x = ages, group = name, fill = type)) +
-  geom_ribbon(aes(ymin = order, ymax = posterior_prob + order), alpha = 0.5) +  
-  geom_text(data = label_positions, aes(x = label_x, y = label_y, label = name), 
-            hjust = 0, nudge_x = 10, size = 2) + 
-  xlim(-10000, -3500) +  
+# Plot using ggplot2 with vertical offsets
+ggplot(merged_plot_data, aes(x = ages - 1950, group = name, fill = density_type)) +
+  # Plot posterior as a filled ribbon
+  geom_ribbon(data = subset(merged_plot_data, density_type == "posterior"),
+              aes(ymin = order, ymax = density + order, fill = type), alpha = 0.5) +
+  
+  # Plot likelihood as a gray line
+  geom_line(data = subset(merged_plot_data, density_type == "likelihood"),
+            aes(y = density + order), color = "black", size = 0.1) +
+
+  # Add labels
+  geom_text(data = label_positions, aes(x = label_x + 100, y = label_y + 0.2, label = name), 
+            hjust = 0, nudge_x = 10, size = 2) +
+  
+  # Additional plot settings
+  xlim(-12000, -5500) +  
   theme_minimal() + 
-  labs(x = "Ages (BC)", y = "Posterior Probability (Normalized)", 
+  labs(x = "Ages (BP)", y = "Posterior Probability (Normalized)", 
        title = "OxCal Phase Model Posteriors", 
-       fill = "Density Type") +  
-  facet_grid(sequence ~ ., scales = "free_y", space = "free") +
+       fill = "Density Type") +
+  
+  # Customize the appearance of facets and legend
   theme(
     strip.text = element_text(size = 10, face = "bold"),
     axis.text.y = element_blank(),
@@ -930,9 +960,27 @@ ggplot(merged_plot_data, aes(x = ages, group = name, fill = type)) +
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank(),
     panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-    legend.position = "bottom"
+    legend.position = ""
   ) +
-  scale_fill_manual(values = c("event" = "steelblue", "boundary" = "palegreen3"))
+  
+  # Specify fill colors for posterior based on type
+  scale_fill_manual(values = c("date" = "steelblue", "boundary" = "lightgreen"), 
+                    name = "Posterior Type") +
+  
+  # Specify color for likelihood lines based on density_type
+  scale_color_manual(values = c("likelihood" = "black"), 
+                     name = "Density Type", 
+                     labels = c("Likelihood")) +
+  
+  # Guide adjustment to combine legends
+  guides(fill = guide_legend(override.aes = list(color = NA)),
+         color = guide_legend(override.aes = list(fill = NA, size = 1)))
+
+ggsave(filename = "Output/posterior_probabilities_plot.pdf",
+    width = 90,
+    height = 170,
+    units = "mm",
+    dpi = 300)
 
 ggsave(filename = "Output/posterior_probabilities_plot.png",
     width = 90,
@@ -940,8 +988,70 @@ ggsave(filename = "Output/posterior_probabilities_plot.png",
     units = "mm",
     dpi = 300)
 
-ggsave(filename = "Output/posterior_probabilities_plot.pdf",
+# Plot using ggplot2 with vertical offsets, focus on only the key boundaries
+boundaries_only <- subset(merged_plot_data, type == "boundary")
+
+# Filter out rows where name is "=IV_st"
+boundaries_only <- subset(boundaries_only, name != "=IV_st")
+
+boundaries_only <- subset(boundaries_only, ages >= -(9000 - 1950) & ages <= -(7000 - 1950))
+
+# Sort the dataframe by 'order' in ascending order
+boundaries_only <- boundaries_only[order(boundaries_only$order), ]
+
+# Get the unique values of 'order' and create a mapping to consecutive integers
+unique_order <- sort(unique(boundaries_only$order))
+order_mapping <- setNames(seq_along(unique_order), unique_order)
+
+# Replace 'order' in the dataframe with the relative order based on the mapping
+boundaries_only$order <- order_mapping[as.character(boundaries_only$order)]
+
+# Determine the position for labels by isolating ages where densities exceed the threshold
+label_positions_bounds <- boundaries_only %>%
+  group_by(name) %>%
+  filter(density == max(density)) %>%  
+  filter(ages == mean(ages)) %>%           
+  mutate(label_x = ages - 1950, label_y = 1)
+
+# one label needs shifting to avoid overlap and since it's only one
+# a pragmatic solution is to change its y coordinates manually
+label_positions_bounds[which(label_positions_bounds$name == "IIIA_st"), "label_y"] <- 1.05
+
+ggplot(boundaries_only, aes(x = ages - 1950, group = name)) +
+  # Plot posterior as a filled ribbon
+  geom_ribbon(aes(ymin = 0, ymax = density, fill = name), alpha = 0.5) +
+
+  # Add labels
+  geom_text(data = label_positions_bounds, aes(x = label_x, y = label_y, label = name), 
+          size = 2) +
+  
+  # Additional plot settings
+  theme_minimal() + 
+  labs(x = "Ages (BP)", y = "Posterior Probability (Normalized)", 
+       title = "Key Boundaries") +
+  
+  # Customize the appearance of facets and legend
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
+    legend.position = ""
+  )
+
+ggsave(filename = "Output/posterior_probabilities_bounds_plot.pdf",
     width = 90,
-    height = 170,
+    height = 40,
     units = "mm",
+    scale = 1.5,
+    dpi = 300)
+
+ggsave(filename = "Output/posterior_probabilities_bounds_plot.png",
+    width = 90,
+    height = 40,
+    units = "mm",
+    scale = 1.5,
     dpi = 300)
